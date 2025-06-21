@@ -1,34 +1,50 @@
-# Importing necessary functions and classes from the Flask library
-from flask import Flask, redirect, url_for
+from flask import Flask, render_template, request
+import pymysql
 
-# Creating an instance of the Flask application
-# '__name__' tells Flask where to look for templates, static files, etc.
-app = Flask(__name__)
+app = Flask(__name__)  # ✅ Define the app FIRST
 
-# Defining a route for the home page using the route decorator
-# When the user visits the root URL ("/"), the 'home' function will be called
-@app.route("/")
+def get_connection():
+    return pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        database='first_frontend_backend_connection'
+    )
+
+# ✅ Now it's safe to define routes
+
+@app.route('/')
 def home():
-    # Returning a simple message as a string, which will be displayed in the browser
-    return "Hello! this is the main page <h1>pushpasri</h1>"
+    return render_template('index.html')
 
-# Defining a dynamic route that takes a variable 'name' from the URL
-# For example, visiting /pushpasri will call this function with name="pushpasri"
-@app.route("/<name>")
-def user(name):
-    # Returning a personalized greeting using the name passed in the URL
-    return f"Hello {name}!"
+@app.route('/submit', methods=['POST'])
+def submit():
+    name = request.form['name']
+    email = request.form['email']
 
-# Defining a route for '/admin'
-# When someone visits /admin, they will be redirected to the user() function with name="Admin!"
-@app.route("/admin")
-def admin():
-    # 'url_for' generates the URL for the 'user' function with the parameter name="Admin!"
-    # 'redirect' sends the user to that generated URL, which is '/Admin!'
-    return redirect(url_for("user", name="Admin!"))
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO users (name, email) VALUES (%s, %s)", (name, email))
+    connection.commit()
+    cursor.close()
+    connection.close()
 
-# This block ensures the app runs only when this script is executed directly (not when imported)
-if __name__ == "__main__":
-    # Starting the Flask development server on default localhost:5000
-    # The server will keep running and listen for web requests
-    app.run()
+    return f"<h3>✅ Thank you {name}, your data has been saved!</h3>"
+
+@app.route('/users')
+def show_users():
+    connection = get_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM users")
+    data = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    
+    html = "<h2>Registered Users:</h2><ul>"
+    for user in data:
+        html += f"<li>{user[1]} ({user[2]})</li>"
+    html += "</ul>"
+    return html
+
+if __name__ == '__main__':
+    app.run(debug=True)

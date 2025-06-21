@@ -13,7 +13,7 @@ app=Flask(__name__)
 #It returns a plain string that is shown in the browser.
 
 def home(home):
-    return render_template("home.html",name=pushpasri)
+    return render_template("home.html")
 
 #This block checks if the script is being run directly (not imported).
 #If true, it starts the Flask development server.
